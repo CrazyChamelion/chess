@@ -1,6 +1,18 @@
 # chess
 chess in python
 
+## Current State
+- Takes turns
+- Select a piece of correct color to see possible moves
+- Escape to select another piece
+- Pick one of the possible moves to move
+- Detects check and draws the square under the king in orange
+
+## Known Bugs
+- Does not require moving out of check
+- Allows moving into check
+- Allows castle through check or out of check
+
 ## use
 
 ```bash
