@@ -7,11 +7,13 @@ chess in python
 - Escape to select another piece
 - Pick one of the possible moves to move
 - Detects check and draws the square under the king in orange
-- Detects check mate and draws the square under the king in blue
 
 ## Known Bugs
 - Allows castle through check or out of check
 - Does not handle en passant
+- Does not require moving out of vheck
+- Allows moving into check
+- Does not detect checkmate
 - Does not detect stalemate
 
 ## use

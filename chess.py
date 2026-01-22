@@ -49,7 +49,7 @@ def ischeck(mycolor, pieces):
 
     for p in pieces:
         if p.color != mycolor:
-            enemymoves.extend (p.get_moves(pieces, prevent_check=False))
+            enemymoves.extend (p.get_moves(pieces))
         elif p.type == Type.KING:
             kingpos = Coordinate(p.cord.i, p.cord.j)
 
@@ -57,14 +57,6 @@ def ischeck(mycolor, pieces):
         if move.i == kingpos.i and move.j == kingpos.j:
             return True, kingpos
     return False, None
-
-def ischeckmate(mycolor, pieces):
-    for p in pieces:
-        if p.color == mycolor:
-            moves = p.get_moves(pieces, prevent_check=True)
-            if len(moves) > 0:
-                return False
-    return True
 
 class Piece():
     def __init__(self, type, color, dir , cord):
@@ -106,32 +98,7 @@ class Piece():
         self.cord = coord
         self.sprite.center_x, self.sprite.center_y = coord.toXY()
 
-    def remove_moves_resulting_in_check(self, moves, pieces):
-        result = []
-        current_pos = self.cord.copy()
-        # simulate each move
-        # if the move results in being in check do not add it to result
-        for m in moves:
-            to_take = None
-            for p in pieces:
-                if p.cord == m:
-                    to_take = p
-                    break
-            if to_take:
-                pieces.remove(to_take)
-            self.move_to(m)
-            in_check, _ = ischeck(self.color, pieces)
-            if not in_check:
-                result.append(m)
-            if to_take:
-                pieces.append(to_take)
-            self.move_to(current_pos)
-
-        return result
-
-
-
-    def get_moves(self, pieces, prevent_check=False):
+    def get_moves(self, pieces):
         result = []
         if self.type == Type.ROOK:
             for a in range (1,10):
@@ -315,8 +282,6 @@ class Piece():
                 if r.j == piecej and r.i == piecei:
                     result.remove(r)
 
-        if prevent_check:
-            return self.remove_moves_resulting_in_check(result, pieces)
         return result
 
 
@@ -481,10 +446,6 @@ class MyGame(arcade.Window):
                         if self.whiteturn == True:
                             mycolor = Color.WHITE
                         self.incheck,self.kingpos = ischeck(mycolor, self.pieces)
-                        if self.incheck:
-                            self.checkmate = ischeckmate(mycolor, self.pieces)
-                        else:
-                            self.checkmate = False
             else:
                 for piece in self.pieces:
                     if self.whiteturn == True and piece.color == Color.BLACK:
@@ -495,7 +456,7 @@ class MyGame(arcade.Window):
 
                     if square_click_x == piece.cord.i and square_click_y == piece.cord.j:
                         self.selected_piece = piece
-                        self.pos_moves = piece.get_moves(self.pieces, prevent_check=True)
+                        self.pos_moves = piece.get_moves(self.pieces)
 
 def main():
     window = MyGame()
