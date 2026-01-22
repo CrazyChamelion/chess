@@ -12,6 +12,7 @@ chess in python
 ## Known Bugs
 - Allows castle through check or out of check
 - Does not handle en passant
+- Does not detect stalemate
 
 ## use
 
