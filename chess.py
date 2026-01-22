@@ -58,6 +58,15 @@ def ischeck(mycolor, pieces):
             return True, kingpos
     return False, None
 
+def ischeckmate(mycolor, pieces):
+    for p in pieces:
+        if p.color == mycolor:
+            moves = p.get_moves(pieces, prevent_check=True)
+            if len(moves) > 0:
+                again = p.get_moves(pieces, prevent_check=True)
+                return False
+    return True
+
 class Piece():
     def __init__(self, type, color, dir , cord):
         self.type = type
@@ -222,7 +231,8 @@ class Piece():
 
 
         # remove moves off the board
-        for r in result:
+        # Since we will remove elements from the list we do a dirty copy with [:] to loop over
+        for r in result[:]:
             if r.i < 0 or r.j < 0 or r.i > 7 or r.j > 7:
                 result.remove(r)
 
@@ -321,6 +331,7 @@ class MyGame(arcade.Window):
         self.reset_board()
         self.clicked_on = False
         self.incheck = False
+        self.checkmate = False
         self.kingpos = None
 
     def reset_board(self):
@@ -398,7 +409,10 @@ class MyGame(arcade.Window):
             arcade.draw_rect_filled(arcade.rect.XYWH((move.i + 0.5) *SQUARE , (move.j +0.5) * SQUARE , SQUARE , SQUARE ),arcade.color.RED)
 
         if self.incheck:
-            arcade.draw_rect_filled(arcade.rect.XYWH((self.kingpos.i + 0.5) *SQUARE , (self.kingpos.j +0.5) * SQUARE , SQUARE , SQUARE ),arcade.color.NEON_CARROT)
+            color = arcade.color.NEON_CARROT
+            if self.checkmate:
+                color = arcade.color.BLUE
+            arcade.draw_rect_filled(arcade.rect.XYWH((self.kingpos.i + 0.5) *SQUARE , (self.kingpos.j +0.5) * SQUARE , SQUARE , SQUARE ),color)
         self.sprite_list.draw()
 
     def draw_grid(self):
@@ -468,6 +482,10 @@ class MyGame(arcade.Window):
                         if self.whiteturn == True:
                             mycolor = Color.WHITE
                         self.incheck,self.kingpos = ischeck(mycolor, self.pieces)
+                        if self.incheck:
+                            self.checkmate = ischeckmate(mycolor, self.pieces)
+                        else:
+                            self.checkmate = False
             else:
                 for piece in self.pieces:
                     if self.whiteturn == True and piece.color == Color.BLACK:
