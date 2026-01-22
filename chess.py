@@ -12,13 +12,16 @@ class Coordinate:
     def __init__(self, i, j):
         self.i = i
         self.j = j
-    
+
     def __eq__(self, other):
         return self.i == other.i and self.j == other.j
 
     def toXY(self ):
         return self.i * SQUARE + SQUARE / 2 , self.j * SQUARE + SQUARE / 2
-    
+
+    def copy(self):
+        return Coordinate(self.i, self.j)
+
 class Direction(Enum):
     UP = 1
     DOWN = 2
@@ -39,7 +42,21 @@ def init_sprite (sprite, cord):
     sprite.width = SQUARE
     sprite.height = SQUARE
     sprite.center_x , sprite.center_y = cord.toXY()
-    return sprite 
+    return sprite
+
+def ischeck(mycolor, pieces):
+    enemymoves = []
+
+    for p in pieces:
+        if p.color != mycolor:
+            enemymoves.extend (p.get_moves(pieces, prevent_check=False))
+        elif p.type == Type.KING:
+            kingpos = Coordinate(p.cord.i, p.cord.j)
+
+    for move in enemymoves:
+        if move.i == kingpos.i and move.j == kingpos.j:
+            return True, kingpos
+    return False, None
 
 class Piece():
     def __init__(self, type, color, dir , cord):
@@ -73,16 +90,40 @@ class Piece():
                 path += "queen"
             case Type.KING:
                 path += "king"
-            
+
         path += ".png"
         self.sprite = init_sprite(arcade.Sprite(path), self.cord)
 
     def move_to(self, coord):
         self.cord = coord
         self.sprite.center_x, self.sprite.center_y = coord.toXY()
-    
-    def get_moves(self, pieces):
-        
+
+    def remove_moves_resulting_in_check(self, moves, pieces):
+        result = []
+        current_pos = self.cord.copy()
+        # simulate each move
+        # if the move results in being in check do not add it to result
+        for m in moves:
+            to_take = None
+            for p in pieces:
+                if p.cord == m:
+                    to_take = p
+                    break
+            if to_take:
+                pieces.remove(to_take)
+            self.move_to(m)
+            in_check, _ = ischeck(self.color, pieces)
+            if not in_check:
+                result.append(m)
+            if to_take:
+                pieces.append(to_take)
+            self.move_to(current_pos)
+
+        return result
+
+
+
+    def get_moves(self, pieces, prevent_check=False):
         result = []
         if self.type == Type.ROOK:
             for a in range (1,10):
@@ -90,13 +131,13 @@ class Piece():
                 result.append(Coordinate(self.cord.i -a , self.cord.j))
                 result.append(Coordinate(self.cord.i  , self.cord.j+a))
                 result.append(Coordinate(self.cord.i  , self.cord.j-a))
-        elif self.type == Type.BISHOP: 
+        elif self.type == Type.BISHOP:
             for a in range (1,10):
                 result.append(Coordinate(self.cord.i +a , self.cord.j+a))
                 result.append(Coordinate(self.cord.i -a , self.cord.j-a))
                 result.append(Coordinate(self.cord.i -a , self.cord.j+a))
                 result.append(Coordinate(self.cord.i +a , self.cord.j-a))
-        elif self.type == Type.KNIGHT: 
+        elif self.type == Type.KNIGHT:
             result.append(Coordinate(self.cord.i +2 , self.cord.j+1))
             result.append(Coordinate(self.cord.i +2 , self.cord.j-1))
             result.append(Coordinate(self.cord.i +1 , self.cord.j+2))
@@ -114,7 +155,7 @@ class Piece():
             result.append(Coordinate(self.cord.i , self.cord.j-1))
             result.append(Coordinate(self.cord.i +1 , self.cord.j))
             result.append(Coordinate(self.cord.i -1 , self.cord.j))
-        
+
             # look for castle
             if self.isfirstmove:
                 left_rook_moved = True
@@ -134,42 +175,42 @@ class Piece():
                             left_rook_moved = False
                         elif p.cord.i == 7:
                             right_rook_moved = False
-                            
-                
+
+
                 if left_rook_moved == False and not left_is_blocked:
                      result.append(Coordinate(self.cord.i -2 , self.cord.j))
-                     
+
                 if right_rook_moved == False and not right_is_blocked:
                     result.append(Coordinate(self.cord.i +2 , self.cord.j))
-                    
+
 
         elif self.type == Type.QUEEN:
             for a in range (1,10):
                 result.append(Coordinate(self.cord.i +a , self.cord.j))
                 result.append(Coordinate(self.cord.i -a , self.cord.j))
                 result.append(Coordinate(self.cord.i  , self.cord.j+a))
-                result.append(Coordinate(self.cord.i  , self.cord.j-a)) 
+                result.append(Coordinate(self.cord.i  , self.cord.j-a))
                 result.append(Coordinate(self.cord.i +a , self.cord.j+a))
                 result.append(Coordinate(self.cord.i -a , self.cord.j-a))
                 result.append(Coordinate(self.cord.i -a , self.cord.j+a))
                 result.append(Coordinate(self.cord.i +a , self.cord.j-a))
-                
+
         elif self.type == Type.PAWN:
             if self.dir == Direction.UP:
-                z = +1 
+                z = +1
             else:
-                z = -1               
-            if self.isfirstmove == True: 
-                result.append(Coordinate(self.cord.i  , self.cord.j+2* z ))      
-            result.append(Coordinate(self.cord.i  , self.cord.j+ z )) 
+                z = -1
+            if self.isfirstmove == True:
+                result.append(Coordinate(self.cord.i  , self.cord.j+2* z ))
+            result.append(Coordinate(self.cord.i  , self.cord.j+ z ))
 
-        
+
             # look for captures
             forward = 1
             if self.color == Color.BLACK:
                 forward = -1
             for p in pieces:
-                capturedi = p.cord.i 
+                capturedi = p.cord.i
                 capturedj = p.cord.j
                 if self.cord.j+forward == capturedj and self.cord.i == capturedi:
                     result.remove (Coordinate(capturedi,capturedj))
@@ -178,13 +219,13 @@ class Piece():
         else:
             print ("SHIT SHIT SHIT SHIT SHIT ITS FUCKED ITS FUCKED ITS FUCKED")
             raise Exception("Unknown piece type was cliced")
-         
+
 
         # remove moves off the board
         for r in result:
             if r.i < 0 or r.j < 0 or r.i > 7 or r.j > 7:
                 result.remove(r)
-        
+
         # handle diagonal moving through pieces for bishop and queen
         if self.type == Type.QUEEN or self.type == Type.BISHOP:
             for p in pieces:
@@ -210,7 +251,7 @@ class Piece():
                     to_remove = Coordinate(p.cord.i + a*di, p.cord.j + a*dj)
                     if to_remove in result:
                         result.remove(to_remove)
-                
+
 
         # handle rook and queen moving through pieces horizontal or verticle
         if self.type == Type.QUEEN or self.type == Type.ROOK:
@@ -253,19 +294,20 @@ class Piece():
                             to_remove = Coordinate(self.cord.i, a)
                             if to_remove in result:
                                 result.remove(to_remove)
-                    
+
 
         # prevent moves that land on color
-        for p in pieces: 
+        for p in pieces:
             if p.color != self.color:
                 continue
-            piecei = p.cord.i  
+            piecei = p.cord.i
             piecej = p.cord.j
             for r in result:
                 if r.j == piecej and r.i == piecei:
-                    result.remove(r) 
-                
-                
+                    result.remove(r)
+
+        if prevent_check:
+            return self.remove_moves_resulting_in_check(result, pieces)
         return result
 
 
@@ -292,21 +334,21 @@ class MyGame(arcade.Window):
             piece = Piece(Type.PAWN, Color.WHITE, Direction.UP, Coordinate(col, 1))
             self.sprite_list.append(piece.sprite)
             self.pieces.append(piece)
-        
+
             piece = Piece (Type.PAWN , Color.BLACK, Direction.DOWN, Coordinate(col, 6))
             self.sprite_list.append(piece.sprite)
             self.pieces.append(piece)
-        
+
         rook = 0
         knight = 1
-        bishop = 2 
+        bishop = 2
 #
         for i in range(2):
             # rooks
             piece = Piece(Type.ROOK, Color.WHITE, Direction.UP, Coordinate(rook, 0))
             self.sprite_list.append(piece.sprite)
             self.pieces.append(piece)
-            
+
             piece = Piece(Type.ROOK, Color.BLACK, Direction.DOWN, Coordinate(rook, 7))
             self.sprite_list.append(piece.sprite)
             self.pieces.append(piece)
@@ -315,7 +357,7 @@ class MyGame(arcade.Window):
             piece = Piece(Type.KNIGHT, Color.WHITE, Direction.UP, Coordinate(knight, 0))
             self.sprite_list.append(piece.sprite)
             self.pieces.append(piece)
-            
+
             piece = Piece(Type.KNIGHT, Color.BLACK, Direction.DOWN, Coordinate(knight, 7))
             self.sprite_list.append(piece.sprite)
             self.pieces.append(piece)
@@ -324,17 +366,17 @@ class MyGame(arcade.Window):
             piece = Piece(Type.BISHOP, Color.WHITE, Direction.UP, Coordinate(bishop, 0))
             self.sprite_list.append(piece.sprite)
             self.pieces.append(piece)
-            
+
             piece = Piece(Type.BISHOP, Color.BLACK, Direction.DOWN, Coordinate(bishop, 7))
             self.sprite_list.append(piece.sprite)
             self.pieces.append(piece)
-            bishop = bishop + 3 
+            bishop = bishop + 3
 
         #king
         piece = Piece(Type.KING, Color.WHITE, Direction.UP, Coordinate(4, 0))
         self.sprite_list.append(piece.sprite)
         self.pieces.append(piece)
-            
+
         piece = Piece(Type.KING, Color.BLACK, Direction.DOWN, Coordinate(4, 7))
         self.sprite_list.append(piece.sprite)
         self.pieces.append(piece)
@@ -342,19 +384,19 @@ class MyGame(arcade.Window):
         piece = Piece(Type.QUEEN, Color.WHITE, Direction.UP, Coordinate(3, 0))
         self.sprite_list.append(piece.sprite)
         self.pieces.append(piece)
-            
+
         piece = Piece(Type.QUEEN, Color.BLACK, Direction.DOWN, Coordinate(3, 7))
         self.sprite_list.append(piece.sprite)
         self.pieces.append(piece)
-         
+
     def on_draw(self):
         self.clear()
         self.draw_grid()
-        if self.selected_piece: 
+        if self.selected_piece:
             arcade.draw_rect_filled(arcade.rect.XYWH((self.selected_piece.cord.i + 0.5) *SQUARE , (self.selected_piece.cord.j +0.5) * SQUARE , SQUARE , SQUARE ),arcade.color.RED)
         for move in self.pos_moves:
             arcade.draw_rect_filled(arcade.rect.XYWH((move.i + 0.5) *SQUARE , (move.j +0.5) * SQUARE , SQUARE , SQUARE ),arcade.color.RED)
-        
+
         if self.incheck:
             arcade.draw_rect_filled(arcade.rect.XYWH((self.kingpos.i + 0.5) *SQUARE , (self.kingpos.j +0.5) * SQUARE , SQUARE , SQUARE ),arcade.color.NEON_CARROT)
         self.sprite_list.draw()
@@ -373,18 +415,18 @@ class MyGame(arcade.Window):
 
     def on_key_press (self, key, modifiers ):
         if key == arcade.key.ESCAPE:
-            self.clicked_on = False 
+            self.clicked_on = False
             self.pos_moves.clear()
-            self.selected_piece = None      
+            self.selected_piece = None
 
     def on_mouse_press(self, x, y, button, key_modifiers):
         if button == arcade.MOUSE_BUTTON_LEFT :
             square_click_x = x // SQUARE
-            square_click_y = y // SQUARE 
+            square_click_y = y // SQUARE
             #if clicked on piece last time
             if self.selected_piece:
                 for move in self.pos_moves:
-                    if square_click_x == move.i and square_click_y == move.j:  
+                    if square_click_x == move.i and square_click_y == move.j:
                         self.selected_piece.move_to(Coordinate(square_click_x, square_click_y))
                         #move rook during castel
                         if self.selected_piece.type == Type.KING and self.selected_piece.isfirstmove:
@@ -396,61 +438,48 @@ class MyGame(arcade.Window):
                                 for p in self.pieces:
                                      if p.type == Type.ROOK and p.cord.i == 7 and p.color == self.selected_piece.color:
                                            p.move_to(Coordinate (5,self.selected_piece.cord.j))
-                        
-                        
-                
+
+
+
 
                         self.pos_moves.clear()
                         # check for capture
                         for p in self.pieces:
-                            capturedi = p.cord.i 
+                            capturedi = p.cord.i
                             capturedj = p.cord.j
-                            if (move.i == capturedi and move.j == capturedj) and p != self.selected_piece: 
+                            if (move.i == capturedi and move.j == capturedj) and p != self.selected_piece:
                                 self.pieces.remove (p)
                                 self.sprite_list.remove(p.sprite)
                                 break
-                        self.selected_piece.isfirstmove = False 
-                        
+                        self.selected_piece.isfirstmove = False
+
                         #promote
-                        if self.selected_piece.type == Type.PAWN: 
-                            if move.j == 0 or move.j == 7: 
+                        if self.selected_piece.type == Type.PAWN:
+                            if move.j == 0 or move.j == 7:
                                 self.pieces.remove (self.selected_piece)
                                 self.sprite_list.remove (self.selected_piece.sprite)
                                 piece = Piece(Type.QUEEN, self.selected_piece.color, self.selected_piece.dir, Coordinate(self.selected_piece.cord.i, self.selected_piece.cord.j))
                                 self.sprite_list.append(piece.sprite)
                                 self.pieces.append(piece)
-                      
-                        self.whiteturn = not self.whiteturn   
+
+                        self.whiteturn = not self.whiteturn
                         self.selected_piece = None
-                        self.incheck,self.kingpos = self.ischeck()
+                        mycolor = Color.BLACK
+                        if self.whiteturn == True:
+                            mycolor = Color.WHITE
+                        self.incheck,self.kingpos = ischeck(mycolor, self.pieces)
             else:
                 for piece in self.pieces:
                     if self.whiteturn == True and piece.color == Color.BLACK:
                         continue
-                    
+
                     if self.whiteturn == False and piece.color == Color.WHITE:
                         continue
-                         
-                    if square_click_x == piece.cord.i and square_click_y == piece.cord.j: 
-                        self.selected_piece = piece
-                        self.pos_moves = piece.get_moves(self.pieces)
-                              
-    def ischeck(self):
-        enemymoves = []
-        mycolor = Color.BLACK
-        if self.whiteturn:
-            mycolor = Color.WHITE
 
-        for p in self.pieces:
-            if p.color != mycolor:
-                enemymoves.extend (p.get_moves(self.pieces))
-            elif p.type == Type.KING:
-                kingpos = Coordinate(p.cord.i, p.cord.j)
-        
-        for move in enemymoves:
-            if move.i == kingpos.i and move.j == kingpos.j:
-                return True, kingpos
-        return False, None
+                    if square_click_x == piece.cord.i and square_click_y == piece.cord.j:
+                        self.selected_piece = piece
+                        self.pos_moves = piece.get_moves(self.pieces, prevent_check=True)
+
 def main():
     window = MyGame()
     arcade.run()
