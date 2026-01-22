@@ -63,7 +63,6 @@ def ischeckmate(mycolor, pieces):
         if p.color == mycolor:
             moves = p.get_moves(pieces, prevent_check=True)
             if len(moves) > 0:
-                again = p.get_moves(pieces, prevent_check=True)
                 return False
     return True
 
