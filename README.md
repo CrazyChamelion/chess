@@ -11,10 +11,8 @@ chess in python
 ## Known Bugs
 - Allows castle through check or out of check
 - Does not handle en passant
-- Does not require moving out of check
-- Allows moving into check
-- Does not detect checkmate
-- Does not detect stalemate
+- Pawns can move though pieces on first move
+
 
 ## use
 
