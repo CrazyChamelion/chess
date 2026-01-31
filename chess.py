@@ -187,7 +187,13 @@ class Piece():
             else:
                 z = -1
             if self.isfirstmove == True:
-                result.append(Coordinate(self.cord.i  , self.cord.j+2* z ))
+                blocked = False
+                for p in pieces:
+                    if p.cord.i == self.cord.i and p.cord.j == self.cord.j + 1:
+                        blocked = True
+                        break
+                if not blocked:
+                    result.append(Coordinate(self.cord.i  , self.cord.j+2* z ))
             result.append(Coordinate(self.cord.i  , self.cord.j+ z ))
 
 
