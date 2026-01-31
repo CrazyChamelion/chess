@@ -58,6 +58,17 @@ def ischeck(mycolor, pieces):
             return True, kingpos
     return False, None
 
+def hasnonomoves(mycolor,pieces):
+    moves = []
+    for p in pieces:
+        if p.color == mycolor:
+            pmovesmoves = p.get_moves(pieces, True)
+            moves.extend (pmovesmoves)
+    if not moves:
+        return True 
+    else:
+        return False 
+
 class Piece():
     def __init__(self, type, color, dir , cord):
         self.type = type
@@ -98,7 +109,7 @@ class Piece():
         self.cord = coord
         self.sprite.center_x, self.sprite.center_y = coord.toXY()
 
-    def get_moves(self, pieces):
+    def get_moves(self, pieces, stopcheck = False):
         result = []
         if self.type == Type.ROOK:
             for a in range (1,10):
@@ -281,11 +292,38 @@ class Piece():
             for r in result:
                 if r.j == piecej and r.i == piecei:
                     result.remove(r)
-
+        if stopcheck:
+            result = self.nomoveintocheck(result,pieces)
         return result
+    
+    def nomoveintocheck(self,moves,pieces,):
+        results = []
+        for m in moves:
+            capture = None 
+            for p in pieces:
+                if m == p.cord:
+                    capture = p 
+                    break 
+            if capture:
+                pieces.remove (capture)
 
+            curposi = self.cord.i
+            curposj = self.cord.j
+            self.cord.i = m.i
+            self.cord.j = m.j
+
+            movecausescheck, _ = ischeck(self.color, pieces)
+            if not movecausescheck:
+                results.append (m) 
+            self.cord.i = curposi
+            self.cord.j = curposj
+            if capture:
+                pieces.append (capture)
+        return results
+    
 
 class MyGame(arcade.Window):
+
 
     def __init__(self):
         super().__init__(SCREEN_WIDTH, SCREEN_HEIGHT, "Chess")
@@ -295,6 +333,7 @@ class MyGame(arcade.Window):
         self.reset_board()
         self.clicked_on = False
         self.incheck = False
+        self.stalemate = False
         self.checkmate = False
         self.kingpos = None
 
@@ -372,12 +411,17 @@ class MyGame(arcade.Window):
         for move in self.pos_moves:
             arcade.draw_rect_filled(arcade.rect.XYWH((move.i + 0.5) *SQUARE , (move.j +0.5) * SQUARE , SQUARE , SQUARE ),arcade.color.RED)
 
-        if self.incheck:
+
+        if self.incheck or self.stalemate:
             color = arcade.color.NEON_CARROT
-            if self.checkmate:
+            if self.stalemate:
+                color = arcade.color.NEON_GREEN
+            elif self.checkmate:
                 color = arcade.color.BLUE
             arcade.draw_rect_filled(arcade.rect.XYWH((self.kingpos.i + 0.5) *SQUARE , (self.kingpos.j +0.5) * SQUARE , SQUARE , SQUARE ),color)
         self.sprite_list.draw()
+
+
 
     def draw_grid(self):
         y=SQUARE / 2
@@ -446,6 +490,14 @@ class MyGame(arcade.Window):
                         if self.whiteturn == True:
                             mycolor = Color.WHITE
                         self.incheck,self.kingpos = ischeck(mycolor, self.pieces)
+                        self.checkmate = False
+                        self.stalemate = False
+                        if hasnonomoves(mycolor,self.pieces) == True:
+                            if self.incheck:
+                                self.checkmate = True
+                            else:
+                                self.stalemate = True 
+
             else:
                 for piece in self.pieces:
                     if self.whiteturn == True and piece.color == Color.BLACK:
@@ -456,7 +508,7 @@ class MyGame(arcade.Window):
 
                     if square_click_x == piece.cord.i and square_click_y == piece.cord.j:
                         self.selected_piece = piece
-                        self.pos_moves = piece.get_moves(self.pieces)
+                        self.pos_moves = piece.get_moves(self.pieces, True)
 
 def main():
     window = MyGame()
