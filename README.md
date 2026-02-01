@@ -10,10 +10,6 @@ chess in python
 - Detects stalemante and draws the square under the king in green
 - Detects checkmate and draws the square under the king in yellow
 
-## Known Bugs
-- Does not handle en passant
-
-
 ## use
 
 ```bash

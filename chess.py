@@ -92,6 +92,7 @@ class Piece:
         self.cord = cord
         self.init_sprite()
         self.isfirstmove = True
+        self.lastmovewasdouble = False
 
     def init_sprite(self):
         path = "./assets/"
@@ -120,9 +121,17 @@ class Piece:
         path += ".png"
         self.sprite = init_sprite(arcade.Sprite(path), self.cord)
 
-    def move_to(self, coord):
-        self.cord = coord
-        self.sprite.center_x, self.sprite.center_y = coord.toXY()
+    def move_to(self, cord):
+        # deal with this move being a double move
+        if self.type == Type.PAWN:
+            if not self.isfirstmove:
+                self.lastmovewasdouble = False
+            else:
+                if cord.i == self.cord.i and abs(self.cord.j - cord.j) == 2:
+                    self.lastmovewasdouble = True
+
+        self.cord = cord
+        self.sprite.center_x, self.sprite.center_y = cord.toXY()
 
     def get_moves(self, pieces, stopcheck=False, check_castle=True):
         result = []
@@ -253,6 +262,14 @@ class Piece:
             if self.color == Color.BLACK:
                 forward = -1
             for p in pieces:
+                # check for en passant
+                if p.type == Type.PAWN and p.lastmovewasdouble:
+                    if p.cord.j == self.cord.j and (
+                        p.cord.i == self.cord.i - 1 or p.cord.i == self.cord.i + 1
+                    ):
+                        result.append(Coordinate(p.cord.i, p.cord.j + forward))
+
+                # check for normal captures
                 capturedi = p.cord.i
                 capturedj = p.cord.j
                 if self.cord.j + forward == capturedj and self.cord.i == capturedi:
@@ -546,6 +563,10 @@ class MyGame(arcade.Window):
             if self.selected_piece:
                 for move in self.pos_moves:
                     if square_click_x == move.i and square_click_y == move.j:
+                        # before we do the move clear lastmovewasdouble on all pieces of this color for en passant
+                        for p in self.pieces:
+                            p.lastmovewasdouble = False
+
                         self.selected_piece.move_to(
                             Coordinate(square_click_x, square_click_y)
                         )
@@ -576,7 +597,8 @@ class MyGame(arcade.Window):
                                         )
 
                         self.pos_moves.clear()
-                        # check for capture
+                        # check for normal capture
+                        did_normal_capture = False
                         for p in self.pieces:
                             capturedi = p.cord.i
                             capturedj = p.cord.j
@@ -585,7 +607,21 @@ class MyGame(arcade.Window):
                             ) and p != self.selected_piece:
                                 self.pieces.remove(p)
                                 self.sprite_list.remove(p.sprite)
+                                did_normal_capture = True
                                 break
+                        # check for en passant captures
+                        if (
+                            not did_normal_capture
+                            and self.selected_piece.type == Type.PAWN
+                        ):
+                            backward = -1
+                            if self.selected_piece.dir == Direction.DOWN:
+                                backward = 1
+                            for p in self.pieces:
+                                if move.i == p.cord.i and move.j + backward == p.cord.j:
+                                    self.pieces.remove(p)
+                                    self.sprite_list.remove(p.sprite)
+
                         self.selected_piece.isfirstmove = False
 
                         # promote
