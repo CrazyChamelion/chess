@@ -239,7 +239,9 @@ class Piece:
             if self.isfirstmove == True:
                 blocked = False
                 for p in pieces:
-                    if p.cord.i == self.cord.i and p.cord.j == self.cord.j + z:
+                    if (p.cord.i == self.cord.i and p.cord.j == self.cord.j + z) or (
+                        p.cord.i == self.cord.i and p.cord.j == self.cord.j + z * 2
+                    ):
                         blocked = True
                         break
                 if not blocked:

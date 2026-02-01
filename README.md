@@ -12,7 +12,6 @@ chess in python
 
 ## Known Bugs
 - Does not handle en passant
-- Pawns can capture with double move on first move
 
 
 ## use
