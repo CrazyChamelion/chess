@@ -7,6 +7,8 @@ chess in python
 - Escape to select another piece
 - Pick one of the possible moves to move
 - Detects check and draws the square under the king in orange
+- Detects stalemante and draws the square under the king in green
+- Detects checkmate and draws the square under the king in yellow
 
 ## Known Bugs
 - Allows castle through check or out of check

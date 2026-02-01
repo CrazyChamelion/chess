@@ -55,8 +55,14 @@ def ischeck(mycolor, pieces):
 
     for move in enemymoves:
         if move.i == kingpos.i and move.j == kingpos.j:
-            return True, kingpos
-    return False, None
+            return True
+    return False
+
+def getkingpos(mycolor, pieces):
+    for p in pieces:
+        if p.type == Type.KING and p.color == mycolor:
+            return p.cord
+    print("we are fucked because we didn't find the king")
 
 def hasnonomoves(mycolor,pieces):
     moves = []
@@ -318,7 +324,7 @@ class Piece():
             self.cord.i = m.i
             self.cord.j = m.j
 
-            movecausescheck, _ = ischeck(self.color, pieces)
+            movecausescheck = ischeck(self.color, pieces)
             if not movecausescheck:
                 results.append (m) 
             self.cord.i = curposi
@@ -510,7 +516,8 @@ class MyGame(arcade.Window):
                         mycolor = Color.BLACK
                         if self.whiteturn == True:
                             mycolor = Color.WHITE
-                        self.incheck,self.kingpos = ischeck(mycolor, self.pieces)
+                        self.incheck = ischeck(mycolor, self.pieces)
+                        self.kingpos = getkingpos(mycolor, self.pieces)
                         self.checkmate = False
                         self.stalemate = False
                         if hasnonomoves(mycolor,self.pieces) == True:
