@@ -8,7 +8,7 @@ chess in python
 - Pick one of the possible moves to move
 - Detects check and draws the square under the king in orange
 - Detects stalemante and draws the square under the king in green
-- Detects checkmate and draws the square under the king in yellow
+- Detects checkmate and draws the square under the king in blue
 
 ## use
 
