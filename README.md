@@ -11,8 +11,8 @@ chess in python
 - Detects checkmate and draws the square under the king in yellow
 
 ## Known Bugs
-- Allows castle through check or out of check
 - Does not handle en passant
+- Pawns can capture with double move on first move
 
 
 ## use
