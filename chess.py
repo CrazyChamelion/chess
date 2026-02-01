@@ -189,7 +189,7 @@ class Piece():
             if self.isfirstmove == True:
                 blocked = False
                 for p in pieces:
-                    if p.cord.i == self.cord.i and p.cord.j == self.cord.j + 1:
+                    if p.cord.i == self.cord.i and p.cord.j == self.cord.j + z:
                         blocked = True
                         break
                 if not blocked:
@@ -440,6 +440,21 @@ class MyGame(arcade.Window):
                 arcade.draw_rect_filled(arcade.rect.XYWH(x , y, SQUARE , SQUARE ),arcade.color.DARK_GREEN)
                 x=x+SQUARE*2
             y = y + SQUARE
+        # now label the grid
+        # colums
+        char = 'A'
+        for j in range(8):
+            arcade.draw_text(char, j * SQUARE, 0, arcade.color.BLACK, 20)
+            char = chr(ord(char) + 1)
+        # rows
+        char = '1'
+        for i in range(8):
+            x = 0
+            if i == 0:
+                x = 15
+            arcade.draw_text(char, x, i * SQUARE, arcade.color.BLACK, 20)
+            char = chr(ord(char) + 1)
+
 
     def on_key_press (self, key, modifiers ):
         if key == arcade.key.ESCAPE:
